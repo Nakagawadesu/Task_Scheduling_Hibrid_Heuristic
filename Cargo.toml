@@ -1,0 +1,6 @@
+[package]
+name = "Task_Scheduling_Hibrid_Heuristic"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
