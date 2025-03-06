@@ -7,30 +7,30 @@ use petgraph::Direction;
 
 // This class is the  one reponsable to Store the information related to the entry task graph only
 // the idea is that the cromosssomes ( phreromones) will be stored in the ant class in a separate graph
-
+#[derive(Clone)]
 pub(crate) struct Utils {
     //The ver own input graph
-    pub(crate) di_graph: StableDiGraph<i128, i128>,
+    pub(crate) di_graph: StableDiGraph<i32, i32>,
 
-    pub(crate) n_tasks: i128,
+    pub(crate) n_tasks: i32,
 
     // the vector that controls the remaining tasks to unlock a certain task
-    pub(crate) remaining_vec: Vec<i128>,
+    pub(crate) remaining_vec: Vec<i32>,
 
     /* VARIABLES TO CALCULATE VISIVILITY */
     // How many tasks a certain task unlocks
-    pub(crate) unlocks_vec: Vec<i128>,
+    pub(crate) unlocks_vec: Vec<i32>,
     // The cost of a certain task
-    pub(crate) costs_vec: Vec<i128>,
-    pub(crate) max_cost: i128,
-    pub(crate) max_unlocks: i128,
+    pub(crate) costs_vec: Vec<i32>,
+    pub(crate) max_cost: i32,
+    pub(crate) max_unlocks: i32,
     pub(crate) visibility: Vec<f64>,
 }
 
 impl Utils {
     pub fn new() -> Self {
         Self {
-            di_graph: StableDiGraph::<i128, i128>::new(),
+            di_graph: StableDiGraph::<i32, i32>::new(),
             n_tasks: 0,
             remaining_vec: Vec::new(),
             unlocks_vec: Vec::new(),
@@ -53,19 +53,19 @@ impl Utils {
         let path = format!("{}{}", file_path, task_graph);
         if let Ok(file) = fs::File::open(path) {
             let reader = BufReader::new(file);
-            let mut count: i128 = 0;
-            let mut task: i128 = 0;
-            let mut line_count: i128 = 0;
-            let mut n_tasks: i128 = 0;
+            let mut count: i32 = 0;
+            let mut task: i32 = 0;
+            let mut line_count: i32 = 0;
+            let mut n_tasks: i32 = 0;
             for line in reader.lines() {
                 let line = line.expect("Failed to read line from file");
                 //println!("{}", line);
                 if line.starts_with("#") {
                     break;
                 }
-                let parsed_vec: Vec<i128> = line
+                let parsed_vec: Vec<i32> = line
                     .split_whitespace()
-                    .map(|s| s.trim().parse::<i128>().expect("Invalid integer"))
+                    .map(|s| s.trim().parse::<i32>().expect("Invalid integer"))
                     .collect();
 
                 for i in &parsed_vec {
@@ -114,24 +114,24 @@ impl Utils {
         &mut self,
         file_path: &str,
         task_graph: &str,
-        n_ants: &mut i128,
+        n_ants: &mut i32,
     ) {
         let path = format!("{}{}", file_path, task_graph);
         if let Ok(file) = fs::File::open(path) {
             let reader = BufReader::new(file);
-            let mut count: i128 = 0;
-            let mut task: i128 = 0;
-            let mut line_count: i128 = 0;
-            let mut n_tasks: i128 = 0;
+            let mut count: i32 = 0;
+            let mut task: i32 = 0;
+            let mut line_count: i32 = 0;
+            let mut n_tasks: i32 = 0;
             for line in reader.lines() {
                 let line = line.expect("Failed to read line from file");
                 //println!("{}", line);
                 if line.starts_with("#") {
                     break;
                 }
-                let parsed_vec: Vec<i128> = line
+                let parsed_vec: Vec<i32> = line
                     .split_whitespace()
-                    .map(|s| s.trim().parse::<i128>().expect("Invalid integer"))
+                    .map(|s| s.trim().parse::<i32>().expect("Invalid integer"))
                     .collect();
 
                 for i in &parsed_vec {
@@ -198,8 +198,8 @@ impl Utils {
     }
 
     pub fn find_max_cost_unlocks(&mut self) {
-        let mut max_cost: i128 = -1;
-        let mut max_unlocks: i128 = -1;
+        let mut max_cost: i32 = -1;
+        let mut max_unlocks: i32 = -1;
         for i in 0..self.n_tasks as usize {
             if max_cost < self.costs_vec[i] {
                 max_cost = self.costs_vec[i];
@@ -227,7 +227,7 @@ impl Utils {
                 .neighbors_directed(source, Direction::Outgoing)
                 .count();
 
-            self.unlocks_vec[source.index() as usize] = outgoing_edges as i128;
+            self.unlocks_vec[source.index() as usize] = outgoing_edges as i32;
 
             if let Some(&weight) = self.costs_vec.get(target_index) {
                 self.di_graph.update_edge(source, target, weight);
@@ -236,7 +236,7 @@ impl Utils {
     }
 
     pub fn init_arrays(&mut self) {
-        self.n_tasks = self.di_graph.node_count() as i128;
+        self.n_tasks = self.di_graph.node_count() as i32;
         print!("n_tasks: {}", self.n_tasks);
         self.update_weights_unlocks();
 
@@ -248,12 +248,12 @@ impl Utils {
     //     &self,
     //     file_path: &str,
     //     graph_name: &str,
-    //     sequence: &Vec<i128>,
-    //     time_spent: &i128,
-    //     n_ants: &i128,
-    //     n_colonies: &i128,
+    //     sequence: &Vec<i32>,
+    //     time_spent: &i32,
+    //     n_ants: &i32,
+    //     n_colonies: &i32,
     //     pherohormones_intensity : &f64,
-    //     benchmark : &i128
+    //     benchmark : &i32
     // ) -> Result<(), Error> {
     //     let size = sequence.len();
     //     let path = format!("{}/{}{}", file_path, size, graph_name);
