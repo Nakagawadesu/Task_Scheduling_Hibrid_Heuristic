@@ -75,6 +75,7 @@ impl Utils {
                             self.remaining_vec = vec![0; n_tasks as usize];
                             self.costs_vec = vec![0; n_tasks as usize];
                             self.unlocks_vec = vec![0; n_tasks as usize];
+                            self.visibility = vec![0.0; n_tasks as usize];
                             for j in 0..n_tasks {
                                 self.di_graph.add_node(j);
                             }
@@ -141,6 +142,8 @@ impl Utils {
                             self.remaining_vec = vec![0; n_tasks as usize];
                             self.costs_vec = vec![0; n_tasks as usize];
                             self.unlocks_vec = vec![0; n_tasks as usize];
+                            self.visibility = vec![0.0; n_tasks as usize];
+
                             for j in 0..n_tasks {
                                 self.di_graph.add_node(j);
                             }
@@ -180,7 +183,9 @@ impl Utils {
     }
 
     pub fn update_visibility(&mut self) {
-        let mut max = 0.0;
+        let mut max: f64 = 0.0;
+        println!("update_visibility ");
+
         for i in 0..self.n_tasks as usize {
             let cost_ratio = (1.0 - (self.costs_vec[i] as f64 / self.max_cost as f64)) as f64;
             let unlocks_ratio = (self.unlocks_vec[i] as f64 / self.max_unlocks as f64) as f64;
@@ -205,9 +210,7 @@ impl Utils {
                 max_cost = self.costs_vec[i];
             }
             if max_unlocks < self.unlocks_vec[i] {
-                if i > 0 {
-                    max_unlocks = self.unlocks_vec[i];
-                }
+                max_unlocks = self.unlocks_vec[i];
             }
         }
         self.max_cost = max_cost;
@@ -238,10 +241,11 @@ impl Utils {
     pub fn init_arrays(&mut self) {
         self.n_tasks = self.di_graph.node_count() as i32;
         print!("n_tasks: {}", self.n_tasks);
-        self.update_weights_unlocks();
 
+        self.update_weights_unlocks();
         self.find_max_cost_unlocks();
-        //self.update_visibility();
+
+        self.update_visibility();
     }
 
     // pub fn write_results_to_file(
@@ -297,18 +301,22 @@ impl Utils {
             let weight = self.di_graph[edge];
             println!(
                 "Edge from {} to {} with weight {}",
-                source.index() + 1,
-                target.index() + 1,
+                source.index(),
+                target.index(),
                 weight
             );
         }
     }
     pub fn print_vecs(&self) {
-        println!("Task: \t Remainig: \t Cost : \t Unlocks :");
+        println!("Task: \t Remainig: \t Cost : \t Unlocks \t Visibility :");
         for i in 0..self.n_tasks as usize {
             println!(
-                "{}        \t {}       \t{}       \t{}",
-                i, self.remaining_vec[i], self.costs_vec[i], self.unlocks_vec[i]
+                "{}        \t {}       \t{}       \t{}       \t{}",
+                i,
+                self.remaining_vec[i],
+                self.costs_vec[i],
+                self.unlocks_vec[i],
+                self.visibility[i]
             );
         }
 
