@@ -4,15 +4,16 @@ use crate::pherohormones::Pherohormones;
 use crate::utils::Utils;
 
 use std::cell::RefCell;
+use std::fmt;
 use std::rc::Rc;
 
 pub struct Colony {
-    utils: Utils,
-    pherohormones: Rc<RefCell<Pherohormones>>,
-    deposit_rate: f64,
-    evaporation_rate: f64,
-    n_ants: i32,
-    file_path: String,
+    pub utils: Utils,
+    pub pherohormones: Rc<RefCell<Pherohormones>>,
+    pub deposit_rate: f64,
+    pub evaporation_rate: f64,
+    pub n_ants: i32,
+    pub file_path: String,
     graph_name: String,
 }
 

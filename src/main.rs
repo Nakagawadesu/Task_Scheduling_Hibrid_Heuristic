@@ -5,8 +5,29 @@ mod worker_ant;
 
 mod utils;
 
+use std::fmt;
 use std::i32::MAX;
 use std::time::{Duration, Instant};
+
+#[derive(Debug, Clone)]
+
+struct ColonyResult {
+    deposit_rate: f64,
+    evaporation_rate: f64,
+    best_cycle: i32,
+    output_dir: String,
+    file_path: String,
+}
+
+impl fmt::Display for ColonyResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Deposit: {:.4}, Evap: {:.4}, Cycles: {}",
+            self.deposit_rate, self.evaporation_rate, self.best_cycle
+        )
+    }
+}
 
 fn main() {
     /*##### READ FILE ###### */
@@ -28,7 +49,7 @@ fn main() {
         // graph_name = "atest2.stg";
         graph_name = "proto151.stg"
     } else {
-        let number = 2500;
+        let number = 500;
         file_path = format!("/home/matheus/STG/{}/", number);
         resuts_path = format!("/home/matheus/STG/results/{}/", number).to_string();
         // graph_name = "atest2.stg";
@@ -48,7 +69,8 @@ fn main() {
     utils.print_graph();
     utils.print_vecs();
 
-    let base_chance = 1.0 / utils.n_tasks as f64;
+    let base_chance = //1.0 / utils.n_tasks as f64;
+    0.045;
 
     /*##### CALL AND MEASURE ###### */
 
@@ -64,7 +86,7 @@ fn main() {
         graph_name,
     );
     let becnhmark: i32 = MAX;
-    let best = colony.ACO(100, alfa, beta, base_chance);
+    let best = colony.ACO(1000, alfa, beta, base_chance);
     //end Time and print
     let end_time = Instant::now();
 
