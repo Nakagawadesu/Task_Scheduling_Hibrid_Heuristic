@@ -89,9 +89,9 @@ def rename_stg_to_csv(directory):
                 os.rename(old_path, new_path)
                 print(f'Renamed: {old_path} -> {new_path}')
 
-                
-rename_stg_to_csv('/home/matheus/STG/results/')        
+# RUN first   source venv/bin/activate  
+# rename_stg_to_csv('/home/matheus/STG/results/')        
 #         
-plot_csv_statistics('/home/matheus/STG/results/500')
+# plot_csv_statistics('/home/matheus/STG/results/500')
 # 
-# process_csv_and_generate_plots('/home/matheus/STG/results/')
+process_csv_and_generate_plots('/home/matheus/STG/results/500')

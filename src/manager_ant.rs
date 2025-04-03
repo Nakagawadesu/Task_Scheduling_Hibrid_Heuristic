@@ -3,6 +3,7 @@ use std::fs;
 use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, Error, Write};
 use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 use petgraph::stable_graph::{EdgeIndex, NodeIndex, StableDiGraph};
 use petgraph::Direction;
@@ -26,7 +27,7 @@ pub(crate) struct ManagerAnt {
     visibility_vec: Vec<f64>,
     visibility_sum: f64,
     current_cycle: i32,
-    pherohormones: Rc<RefCell<Pherohormones>>,
+    pherohormones: Arc<Mutex<Pherohormones>>,
     evaporation_rate: f64,
     deposit_rate: f64,
     alfa: f64,
@@ -40,7 +41,7 @@ impl ManagerAnt {
     pub fn new(
         utils: &Utils,
         n_ants: i32,
-        pherohormones: Rc<RefCell<Pherohormones>>,
+        pherohormones: Arc<Mutex<Pherohormones>>,
         evaporation_rate: f64,
         deposit_rate: f64,
         n_tasks: i32,
@@ -93,7 +94,8 @@ impl ManagerAnt {
 
         // Save the pherohormones state
         self.pherohormones
-            .borrow()
+            .lock() // Changed from .borrow()
+            .unwrap()
             .save_gephi(frame_counter)
             .expect("Failed to save frame");
         // It adds 1 to the last cycle , sothe real number of cycles spent is the current cycle - 1
@@ -196,11 +198,12 @@ impl ManagerAnt {
         for (i, &is_available) in self.available_tasks.iter().enumerate() {
             if is_available {
                 let last_task = self.ants[free_ant as usize].last_task;
-                let pherohormones_sum = self.pherohormones.borrow().pheromones_sum;
+                let pherohormones_sum = self.pherohormones.lock().unwrap().pheromones_sum;
 
                 let pheromone = if last_task != -1 {
                     self.pherohormones
-                        .borrow()
+                        .lock()
+                        .unwrap()
                         .find_paths(last_task)
                         .iter()
                         .find(|path| path.task == i as i32)
@@ -265,7 +268,7 @@ impl ManagerAnt {
                 last_task as i32,
                 *chosen_task as i32,
                 free_at,
-                &mut self.pherohormones.borrow_mut(),
+                &mut self.pherohormones.lock().unwrap(),
                 self.deposit_rate,
                 self.current_cycle,
             );
