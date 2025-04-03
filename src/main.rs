@@ -1,42 +1,70 @@
-mod Colony;
-mod Utils;
+mod colony;
+mod manager_ant;
+pub mod pherohormones;
+mod worker_ant;
 
+mod utils;
+
+use std::i32::MAX;
 use std::time::{Duration, Instant};
 
 fn main() {
     /*##### READ FILE ###### */
-    let is_proto = true;
+    let is_proto = false;
 
-    let mut file_path = "";
+    let pherohormones_output_dir = "/home/matheus/STG/pherohormones/frames";
+    let mut file_path = String::new();
     let mut graph_name = "";
+    let mut resuts_path = String::new();
     let mut n_ants = 4;
 
+    /*##### PARAMETERS ###### */
+    let alfa = 0.0;
+    let beta = 1.0;
+
     if is_proto {
-        file_path = "/home/matheus/STG/protostg/";
-        graph_name = "proto001.stg";
+        file_path = "/home/matheus/STG/protostg/".to_owned();
+        resuts_path = "/home/matheus/STG/results/protostg/".to_owned();
+        // graph_name = "atest2.stg";
+        graph_name = "proto151.stg"
     } else {
-        file_path = "/home/matheus/STG/500/";
-        graph_name = "rand0147.stg";
+        let number = 2500;
+        file_path = format!("/home/matheus/STG/{}/", number);
+        resuts_path = format!("/home/matheus/STG/results/{}/", number).to_string();
+        // graph_name = "atest2.stg";
+        graph_name = "rand0001.stg";
     }
-    let mut graph = Utils::Utils::new();
+    let mut utils = utils::Utils::new();
 
     /*##### INIT ###### */
     if is_proto {
-        graph.initialize_graph_prototype(file_path, graph_name, &mut n_ants);
+        utils.initialize_graph_prototype(&file_path, graph_name, &mut n_ants);
     } else {
-        graph.initialize_graph(file_path, graph_name);
+        utils.initialize_graph(&file_path, graph_name);
     }
 
-    graph.init_arrays();
+    utils.init_arrays();
 
-    let mut colony = Colony::Colony::new(&graph, n_ants);
+    utils.print_graph();
+    utils.print_vecs();
+
+    let base_chance = 1.0 / utils.n_tasks as f64;
 
     /*##### CALL AND MEASURE ###### */
 
     let start_time = Instant::now();
 
-    colony.work();
-
+    let colony = &mut colony::Colony::new(
+        &utils,
+        n_ants,
+        0.01,
+        0.0025,
+        pherohormones_output_dir,
+        &resuts_path,
+        graph_name,
+    );
+    let becnhmark: i32 = MAX;
+    let best = colony.ACO(100, alfa, beta, base_chance);
     //end Time and print
     let end_time = Instant::now();
 
@@ -52,5 +80,5 @@ fn main() {
         elapsed_seconds, elapsed_millis, elapsed_micros
     );
     println!("Time to complete the work: ");
-    println!("{}", colony.current_c().to_string() + " cycles");
+    println!("{}", best.to_string() + " cycles");
 }

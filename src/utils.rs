@@ -1,6 +1,7 @@
-use std::fs;
 use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, Error, Write};
+use std::path::Path;
+use std::{fs, io};
 
 use petgraph::stable_graph::{EdgeIndex, NodeIndex, StableDiGraph};
 use petgraph::Direction;
@@ -25,6 +26,7 @@ pub(crate) struct Utils {
     pub(crate) max_cost: i32,
     pub(crate) max_unlocks: i32,
     pub(crate) visibility: Vec<f64>,
+    pub(crate) visibility_sum: f64,
 }
 
 impl Utils {
@@ -38,6 +40,7 @@ impl Utils {
             max_cost: 0,
             max_unlocks: 0,
             visibility: Vec::new(),
+            visibility_sum: 0.0,
         }
     }
     pub fn show_content(file_path: &str) {
@@ -200,6 +203,8 @@ impl Utils {
         for i in 0..self.n_tasks as usize {
             self.visibility[i] = self.visibility[i] / max;
         }
+
+        self.visibility_sum = self.visibility.iter().sum();
     }
 
     pub fn find_max_cost_unlocks(&mut self) {
@@ -285,6 +290,49 @@ impl Utils {
     //     Ok(())
     // }
 
+    /// Appends a new record to a CSV file, creating the file and its parent directories if they don't exist.
+    ///
+    /// # Arguments
+    ///
+    /// * `epoch` - The epoch value to append.
+    /// * `max_weight` - The max_weight value to append.
+    /// * `cycles_spent` - The cycles_spent value to append.
+    /// * `dir_path` - The directory path where the file is located.
+    /// * `file_name` - The name of the CSV file.
+    ///
+    /// # Returns
+    ///
+    /// * `io::Result<()>` - Ok if the operation succeeds, or an error if it fails.
+    pub fn append_to_csv(
+        epoch: i32,
+        max_weight: f64,
+        cycles_spent: i32,
+        dir_path: &str,
+        file_name: &str,
+    ) -> io::Result<()> {
+        // Construct the full file path
+        let file_path = Path::new(dir_path).join(file_name);
+
+        // Create the directory if it doesn't exist
+        if let Some(parent) = file_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+
+        // Open the file in append mode, create it if it doesn't exist
+        let mut file = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .create(true)
+            .open(&file_path)?;
+
+        // Construct the CSV record
+        let record = format!("{},{},{}\n", epoch, max_weight, cycles_spent);
+
+        // Write the record to the file
+        file.write_all(record.as_bytes())?;
+
+        Ok(())
+    }
     //********//
     // PRINTS //
     //********//
