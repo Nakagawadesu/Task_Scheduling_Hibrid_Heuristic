@@ -5,6 +5,9 @@ use std::{fs, io};
 
 use petgraph::stable_graph::{EdgeIndex, NodeIndex, StableDiGraph};
 use petgraph::Direction;
+use rand::Rng;
+
+use crate::worker_ant::WorkerAnt; // Import the Rng trait to use gen_range
 
 // This class is the  one reponsable to Store the information related to the entry task graph only
 // the idea is that the cromosssomes ( phreromones) will be stored in the ant class in a separate graph
@@ -27,6 +30,7 @@ pub(crate) struct Utils {
     pub(crate) max_unlocks: i32,
     pub(crate) visibility: Vec<f64>,
     pub(crate) visibility_sum: f64,
+    pub(crate) thread_pherohormones: Vec<(f64, f64)>,
 }
 
 impl Utils {
@@ -41,6 +45,7 @@ impl Utils {
             max_unlocks: 0,
             visibility: Vec::new(),
             visibility_sum: 0.0,
+            thread_pherohormones: Vec::new(),
         }
     }
     pub fn show_content(file_path: &str) {
@@ -252,57 +257,40 @@ impl Utils {
 
         self.update_visibility();
     }
+    // initiates the evaporation and deposit rates
+    pub fn init_parameters_vec(&mut self, n_threads: i32, deposit_base: f64) {
+        let mut rng = rand::rng();
 
-    // pub fn write_results_to_file(
-    //     &self,
-    //     file_path: &str,
-    //     graph_name: &str,
-    //     sequence: &Vec<i32>,
-    //     time_spent: &i32,
-    //     n_ants: &i32,
-    //     n_colonies: &i32,
-    //     pherohormones_intensity : &f64,
-    //     benchmark : &i32
-    // ) -> Result<(), Error> {
-    //     let size = sequence.len();
-    //     let path = format!("{}/{}{}", file_path, size, graph_name);
+        for i in 0..n_threads {
+            let deposit_rate = deposit_base;
 
-    //     let time_str = time_spent.to_string();
-    //     let ants = n_ants.to_string();
+            // Gera taxa de evaporação aleatória entre 10% e 90% da taxa de depósito
+            let evaporation_rate = rng.random_range(deposit_base * 0.1..deposit_base * 0.75);
 
-    //     let content = format!(
-    //         "\nnumber of processors: {}, number of tasks: {}\npherohormones intensity: {} , colonies: {} \ntime spent: {} , benchmark: {}",
-    //         ants, size ,pherohormones_intensity.to_string() , n_colonies.to_string(),
-    //          time_str , benchmark.to_string()
-    //     );
+            println!(
+                "deposit_rate: {} , evaporation_rate: {} , thread_id: {}",
+                deposit_rate, evaporation_rate, i,
+            );
+            self.thread_pherohormones
+                .push((deposit_rate, evaporation_rate));
+        }
+    }
+    pub fn delete_file(dir_path: &str, file_name: &str) {
+        // Construct the full file path
+        let file_path = std::path::Path::new(dir_path).join(file_name);
 
-    //     let mut f = std::fs::OpenOptions::new()
-    //         .read(true)
-    //         .write(true)
-    //         .append(true)
-    //         .create(true)
-    //         .open(path)
-    //         .unwrap();
-
-    //     f.write_all(content.as_bytes())?;
-    //     f.flush()?;
-
-    //     Ok(())
-    // }
-
-    /// Appends a new record to a CSV file, creating the file and its parent directories if they don't exist.
-    ///
-    /// # Arguments
-    ///
-    /// * `epoch` - The epoch value to append.
-    /// * `max_weight` - The max_weight value to append.
-    /// * `cycles_spent` - The cycles_spent value to append.
-    /// * `dir_path` - The directory path where the file is located.
-    /// * `file_name` - The name of the CSV file.
-    ///
-    /// # Returns
-    ///
-    /// * `io::Result<()>` - Ok if the operation succeeds, or an error if it fails.
+        // Check if the file exists
+        if file_path.exists() {
+            // Attempt to delete the file
+            if let Err(e) = std::fs::remove_file(&file_path) {
+                eprintln!("Failed to delete file {}: {}", file_path.display(), e);
+            } else {
+                println!("File {} deleted successfully.", file_path.display());
+            }
+        } else {
+            println!("File {} does not exist.", file_path.display());
+        }
+    }
     pub fn append_to_csv(
         epoch: i32,
         max_weight: f64,
@@ -317,7 +305,6 @@ impl Utils {
         if let Some(parent) = file_path.parent() {
             fs::create_dir_all(parent)?;
         }
-
         // Open the file in append mode, create it if it doesn't exist
         let mut file = OpenOptions::new()
             .write(true)
@@ -382,6 +369,61 @@ impl Utils {
     pub fn print_visibility(&self, n_tasks: usize, visibility: &Vec<f64>) {
         for i in 0..n_tasks {
             println!("task {} visibility {}", i, visibility[i]);
+        }
+    }
+    pub fn print_gantt_chart(ants: &Vec<WorkerAnt>) {
+        // Find maximum cycle and calculate widths
+        let max_cycle = ants
+            .iter()
+            .flat_map(|ant| {
+                ant.task_history
+                    .iter()
+                    .filter(|&&(_, start, end)| end > start)
+                    .map(|&(_, _, end)| end)
+            })
+            .max()
+            .unwrap_or(0);
+
+        let cycle_width = max_cycle.to_string().len().max(4);
+        let column_width = 7; // Width for each ant column
+
+        // Print header
+        println!("\nGantt Chart:");
+        print!("{:width$}", "Cycle", width = cycle_width);
+        for i in 0..ants.len() {
+            print!(
+                "| {:^width$} ",
+                format!(" Ant {} ", i),
+                width = column_width - 2
+            );
+        }
+        println!("|");
+
+        // // Print separator
+        // print!("{:->width$}", "", width = cycle_width);
+        // for _ in 0..best_result.ants.len() {
+        //     print!("|{:->width$}", "", width = column_width);
+        // }
+        // println!("|");
+
+        // Print rows
+        for cycle in 0..max_cycle {
+            print!("{:width$} ", cycle, width = cycle_width);
+            for ant in ants {
+                let task = ant
+                    .task_history
+                    .iter()
+                    .find(|&&(_, start, end)| start <= cycle && cycle < end)
+                    .map(|&(id, _, _)| id)
+                    .unwrap_or(0);
+
+                if task > 0 {
+                    print!("| {:^width$} ", task, width = column_width);
+                } else {
+                    print!("| {:^width$} ", "", width = column_width);
+                }
+            }
+            println!("|");
         }
     }
 }

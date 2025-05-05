@@ -1,5 +1,5 @@
 use crate::pherohormones::{self, Pherohormones};
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct WorkerAnt {
     // the identifyer of the worker is the index of the array
     pub current_task: i32,

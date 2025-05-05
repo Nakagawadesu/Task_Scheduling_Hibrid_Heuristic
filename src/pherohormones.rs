@@ -10,6 +10,8 @@ pub struct Path {
     pub task: i32,
     pub weight: f64,
 }
+#[derive(Clone)]
+
 pub struct Pherohormones {
     pub di_graph: StableDiGraph<f64, f64>,
     pub pheromones_sum: f64,
@@ -22,6 +24,7 @@ impl Pherohormones {
             di_graph: StableDiGraph::new(),
             n_tasks: n_tasks,
             output_dir: output_dir.to_string(),
+
             pheromones_sum: 0.0,
         }
     }

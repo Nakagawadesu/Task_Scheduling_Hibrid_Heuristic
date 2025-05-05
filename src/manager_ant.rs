@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 use petgraph::stable_graph::{EdgeIndex, NodeIndex, StableDiGraph};
 use petgraph::Direction;
 
-use rand::thread_rng;
+use rand::{thread_rng, Rng};
 use random_choice::random_choice;
 
 use crate::pherohormones::{self, Pherohormones};
@@ -17,7 +17,7 @@ use crate::worker_ant::WorkerAnt;
 
 pub(crate) struct ManagerAnt {
     n_ants: i32,
-    ants: Vec<WorkerAnt>,
+    pub ants: Vec<WorkerAnt>,
     //utils: Utils
     di_graph: StableDiGraph<i32, i32>,
     n_tasks: i32,
@@ -28,6 +28,7 @@ pub(crate) struct ManagerAnt {
     visibility_sum: f64,
     current_cycle: i32,
     pherohormones: Arc<Mutex<Pherohormones>>,
+    pub local_pherohormones: pherohormones::Pherohormones,
     evaporation_rate: f64,
     deposit_rate: f64,
     alfa: f64,
@@ -49,6 +50,8 @@ impl ManagerAnt {
         beta: f64,
         base_chance: f64,
     ) -> ManagerAnt {
+        let local_pherohormones = pherohormones.lock().unwrap().clone();
+
         ManagerAnt {
             n_ants: n_ants,
             ants: vec![WorkerAnt::new(n_tasks); n_ants as usize],
@@ -63,6 +66,7 @@ impl ManagerAnt {
             visibility_sum: utils.visibility_sum,
             current_cycle: 0,
             pherohormones,
+            local_pherohormones,
             evaporation_rate,
             deposit_rate,
             alfa,
@@ -92,14 +96,7 @@ impl ManagerAnt {
             self.current_cycle += 1;
         }
 
-        // Save the pherohormones state
-        self.pherohormones
-            .lock() // Changed from .borrow()
-            .unwrap()
-            .save_gephi(frame_counter)
-            .expect("Failed to save frame");
-        // It adds 1 to the last cycle , sothe real number of cycles spent is the current cycle - 1
-        cycles_spent = self.current_cycle - 1;
+        cycles_spent = self.current_cycle - 2;
         cycles_spent
     }
 
@@ -233,9 +230,13 @@ impl ManagerAnt {
                 //     , pherohormones_sum.powf(self.beta) ,
                 //     weight - self.base_chance,
                 //     self.base_chance
-                // );
+                // );]
 
-                weights.push(weight + self.base_chance);
+                let mut rng = rand::rng();
+                // Generate a random number between 0.0 and max value wich wil decrease as epochs advance
+                // let max_value =
+                let base_chance = rng.random_range(0.0..1.0) * self.base_chance;
+                weights.push(weight + base_chance);
 
                 candidate_tasks.push(i as i32);
             }
@@ -264,11 +265,12 @@ impl ManagerAnt {
 
             let free_at = self.current_cycle + self.costs_vec[*chosen_task as usize];
             let last_task = self.ants[free_ant as usize].last_task;
+            // Only add pherohormones to the local pherohormones
             self.ants[free_ant as usize].start_task(
                 last_task as i32,
                 *chosen_task as i32,
                 free_at,
-                &mut self.pherohormones.lock().unwrap(),
+                &mut self.local_pherohormones,
                 self.deposit_rate,
                 self.current_cycle,
             );
